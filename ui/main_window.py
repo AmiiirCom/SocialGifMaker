@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QLineEdit, QTextEdit
 )
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPixmap, QFont, QColor
+from PySide6.QtGui import QPixmap, QFont, QColor, QIcon
 from core.video_processor import VideoProcessor
 from core.text_overlay import add_text_to_frame
 from workers.video_loader_worker import VideoLoaderWorker
@@ -15,12 +15,16 @@ from workers.gif_worker import GifWorker
 from workers.size_estimator_worker import SizeEstimatorWorker
 from logging_config import setup_logging
 
+import resources_rc 
+
 logger = setup_logging()
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+    
         self.setWindowTitle("GIF Maker for Social Media")
+        self.setWindowIcon(QIcon(":/resource/icon.ico"))
         self.setMinimumSize(1200, 700)
         self.video_processor = None
         self.current_video_path = None
