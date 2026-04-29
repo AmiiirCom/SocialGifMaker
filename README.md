@@ -1,4 +1,4 @@
-# 🎬 GIF Maker for Social Media
+# 🎬 Social Gif Maker (SGM)
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
 [![PySide6](https://img.shields.io/badge/PySide6-6.6%2B-green)](https://doc.qt.io/qtforpython/)
