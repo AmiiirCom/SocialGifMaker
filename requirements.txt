@@ -1,0 +1,10 @@
+arabic-reshaper==3.0.1
+fonttools==4.62.1
+numpy==2.4.4
+opencv-python==4.13.0.92
+pillow==12.2.0
+PySide6==6.11.0
+PySide6_Addons==6.11.0
+PySide6_Essentials==6.11.0
+python-bidi==0.6.7
+shiboken6==6.11.0
