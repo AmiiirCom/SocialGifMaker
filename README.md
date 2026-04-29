@@ -4,6 +4,7 @@
 [![PySide6](https://img.shields.io/badge/PySide6-6.6%2B-green)](https://doc.qt.io/qtforpython/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](https://opencv.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![AI-Assisted](https://img.shields.io/badge/AI--Assisted-blue?logo=openai&logoColor=white)](https://openai.com)
 
 ![AppIcon](https://github.com/AmiiirCom/SocialGifMaker/blob/master/resource/icon.png)
 
@@ -56,5 +57,5 @@ All processing is done in background threads, so you can keep interacting with t
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/gif-maker-social.git
-   cd gif-maker-social
+   git clone https://github.com/AmiiirCom/SocialGifMaker.git
+   cd SocialGifMaker
