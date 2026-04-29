@@ -5,6 +5,8 @@
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](https://opencv.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
+![AppIcon](https://github.com/AmiiirCom/SocialGifMaker/blob/master/resource/icon.png)
+
 A **professional desktop application** to convert video clips into **lightweight, social‑media‑ready GIFs** with full control over quality, trimming, and text overlays.
 
 ![Screenshot](screenshot.png) *(add a screenshot of your app here)*
