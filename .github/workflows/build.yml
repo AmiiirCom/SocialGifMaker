@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
 
@@ -52,7 +55,7 @@ jobs:
       - name: Prepare zip (single EXE)
         id: prepare
         run: |
-          $VERSION = "${{ steps.get_version.outputs.VERSION }}"
+          $VERSION = "$env:GITHUB_REF_NAME" -replace '^v', ''
           $ZIP_NAME = "SocialGifMaker-Windows-$VERSION.zip"
           New-Item -ItemType Directory -Path "temp_package" -Force
           Copy-Item -Path "build/SocialGifMaker.exe" -Destination "temp_package/"
