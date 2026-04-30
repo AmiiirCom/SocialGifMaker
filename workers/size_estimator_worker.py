@@ -63,11 +63,11 @@ class SizeEstimatorWorker(QThread):
 
                 pil_img = Image.fromarray(cv2.cvtColor(resized, cv2.COLOR_BGR2RGB))
                 if palette != "Full":
-                    num_colors = int(palette)
+                    num_colors = int(palette) if palette.isdigit() else 256
                     pil_img = pil_img.quantize(colors=num_colors, method=Image.MEDIANCUT, dither=Image.NONE)
 
-                with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmp:
-                    tmp_path = tmp.name
+                fd, tmp_path = tempfile.mkstemp(suffix=".gif")
+                os.close(fd)
                 pil_img.save(tmp_path, save_all=False, optimize=True)
                 size = os.path.getsize(tmp_path)
                 os.unlink(tmp_path)
