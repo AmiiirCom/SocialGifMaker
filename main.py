@@ -7,7 +7,7 @@ import sys
 import os
 import ctypes
 from typing import Optional
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtNetwork import QLocalServer
 from PySide6.QtGui import QIcon
@@ -46,8 +46,6 @@ if __name__ == "__main__":
         QMessageBox.critical(None, "Already Running", "Another instance is already running.")
         sys.exit(0)
 
-    set_windows_app_id()
-
     # High-DPI support
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -55,11 +53,18 @@ if __name__ == "__main__":
 
     setup_logging()
 
+    # Create application
     app = QApplication(sys.argv)
     app._single_instance_server = server
+
+    # Set AppUserModelID before and after app creation (ensures taskbar icon registers)
+    set_windows_app_id()
+    # Also set icon on the application itself
     app.setWindowIcon(QIcon(":/resource/icon.ico"))
 
     window = MainWindow()
-    window.show()
+
+    # Slight delay to allow Windows to register the AppUserModelID before showing
+    QTimer.singleShot(50, window.show)
 
     sys.exit(app.exec())
