@@ -37,7 +37,6 @@ jobs:
           python -m nuitka `
             --onefile `
             --enable-plugin=pyside6 `
-            --enable-plugin=pillow `
             --windows-console-mode=disable `
             --windows-icon-from-ico=resource/icon.ico `
             --include-data-dir=resource=resource `
@@ -45,6 +44,7 @@ jobs:
             --include-package=arabic_reshaper `
             --include-package=fontTools `
             --include-package=bidi `
+            --include-package=PIL `
             --output-dir=build `
             --output-filename=SocialGifMaker.exe `
             --assume-yes-for-downloads `
@@ -93,12 +93,12 @@ jobs:
           python -m nuitka \
             --onefile \
             --enable-plugin=pyside6 \
-            --enable-plugin=pillow \
             --include-data-dir=resource=resource \
             --include-module=resources_rc \
             --include-package=arabic_reshaper \
             --include-package=fontTools \
             --include-package=bidi \
+            --include-package=PIL \
             --output-dir=build \
             --output-filename=SocialGifMaker \
             --assume-yes-for-downloads \
@@ -143,12 +143,12 @@ jobs:
           python -m nuitka \
             --onefile \
             --enable-plugin=pyside6 \
-            --enable-plugin=pillow \
             --include-data-dir=resource=resource \
             --include-module=resources_rc \
             --include-package=arabic_reshaper \
             --include-package=fontTools \
             --include-package=bidi \
+            --include-package=PIL \
             --output-dir=build \
             --output-filename=SocialGifMaker \
             --assume-yes-for-downloads \
