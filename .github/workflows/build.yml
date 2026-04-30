@@ -10,33 +10,32 @@ permissions:
   contents: write
 
 jobs:
+  # ========== Build Windows (onefile) ==========
   build-windows:
     if: github.event_name != 'push' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-'))
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           architecture: 'x64'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install nuitka
-
       - name: Extract version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-
-      - name: Build with Nuitka
+      - name: Build with Nuitka (onefile)
         run: |
           python -m nuitka `
-            --standalone `
+            --onefile `
             --enable-plugin=pyside6 `
             --windows-console-mode=disable `
             --windows-icon-from-ico=resource/icon.ico `
@@ -46,16 +45,135 @@ jobs:
             --output-filename=SocialGifMaker.exe `
             --assume-yes-for-downloads `
             main.py
-
-      - name: Zip the output folder
+      - name: Prepare zip (single EXE)
+        id: prepare
         run: |
           $VERSION = "${{ steps.get_version.outputs.VERSION }}"
-          Compress-Archive -Path build/main.dist/* -DestinationPath "SocialGifMaker-$VERSION.zip"
+          $ZIP_NAME = "SocialGifMaker-Windows-$VERSION.zip"
+          # Create temp folder and copy the exe
+          New-Item -ItemType Directory -Path "temp_package" -Force
+          Copy-Item -Path "build/SocialGifMaker.exe" -Destination "temp_package/"
+          Compress-Archive -Path "temp_package/*" -DestinationPath $ZIP_NAME -Force
+          Remove-Item -Recurse -Force "temp_package"
+          echo "ZIP_NAME=$ZIP_NAME" >> $env:GITHUB_OUTPUT
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: ${{ steps.prepare.outputs.ZIP_NAME }}
 
-      - name: Create Release and Upload Asset
+  # ========== Build Linux (onefile) ==========
+  build-linux:
+    if: github.event_name != 'push' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-util1 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-x11-0
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+      - name: Build with Nuitka (onefile)
+        run: |
+          python -m nuitka \
+            --onefile \
+            --enable-plugin=pyside6 \
+            --include-data-dir=resource=resource \
+            --include-module=resources_rc \
+            --output-dir=build \
+            --output-filename=SocialGifMaker \
+            --assume-yes-for-downloads \
+            main.py
+      - name: Prepare zip (single executable)
+        id: prepare
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          ZIP_NAME="SocialGifMaker-Linux-$VERSION.zip"
+          mkdir -p temp_package
+          cp build/SocialGifMaker temp_package/
+          zip -j "$ZIP_NAME" temp_package/SocialGifMaker
+          rm -rf temp_package
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: ${{ steps.prepare.outputs.ZIP_NAME }}
+
+  # ========== Build macOS (onefile) ==========
+  build-macos:
+    if: github.event_name != 'push' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-'))
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+      - name: Build with Nuitka (onefile)
+        run: |
+          python -m nuitka \
+            --onefile \
+            --enable-plugin=pyside6 \
+            --include-data-dir=resource=resource \
+            --include-module=resources_rc \
+            --output-dir=build \
+            --output-filename=SocialGifMaker \
+            --assume-yes-for-downloads \
+            main.py
+      - name: Prepare zip (single executable)
+        id: prepare
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          ZIP_NAME="SocialGifMaker-macOS-$VERSION.zip"
+          mkdir -p temp_package
+          cp build/SocialGifMaker temp_package/
+          zip -j "$ZIP_NAME" temp_package/SocialGifMaker
+          rm -rf temp_package
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: ${{ steps.prepare.outputs.ZIP_NAME }}
+
+  # ========== Create Release ==========
+  release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: List files
+        run: ls -R artifacts
+      - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: SocialGifMaker-${{ steps.get_version.outputs.VERSION }}.zip
+          files: artifacts/*/*.zip
           generate_release_notes: true
           prerelease: false
         env:
