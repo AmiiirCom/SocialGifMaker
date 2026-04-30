@@ -5,3 +5,5 @@ logs
 *.log
 venv
 *.psd
+build
+*.exe
