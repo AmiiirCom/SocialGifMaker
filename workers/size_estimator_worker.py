@@ -4,12 +4,17 @@ Samples a few frames, applies the same transformations, and extrapolates.
 """
 
 import os
+import sys
 import tempfile
+import traceback
 import cv2
 from PIL import Image
 from PySide6.QtCore import QThread, Signal
 from core.video_processor import VideoProcessor
 from core.text_overlay import add_text_to_frame
+from logging_config import setup_logging
+
+logger = setup_logging()
 
 
 class SizeEstimatorWorker(QThread):
@@ -28,6 +33,7 @@ class SizeEstimatorWorker(QThread):
 
     def run(self):
         try:
+            logger.info("SizeEstimatorWorker started")
             vp = VideoProcessor(self.video_path)
             resize_percent = self.gif_config["resize_percent"]
             palette = self.gif_config["palette"]
@@ -36,21 +42,28 @@ class SizeEstimatorWorker(QThread):
 
             total_duration = self.end_sec - self.start_sec
             if total_duration <= 0:
+                logger.warning("Total duration <= 0, estimating 0 bytes")
                 self.finished.emit(0)
                 return
 
             total_frames = max(1, int(total_duration * target_fps / frame_skip))
-            num_samples = min(15, total_frames)
+            num_samples = min(10, total_frames)
             if num_samples == 0:
                 num_samples = 1
+            logger.info(f"Total frames: {total_frames}, sampling {num_samples} frames")
 
             total_size = 0
             sample_count = 0
+
+            # Create a fallback temp directory if system temp is not writable
+            fallback_temp = os.path.join(os.path.dirname(sys.executable), "temp_estimator")
+            os.makedirs(fallback_temp, exist_ok=True)
 
             for i in range(num_samples):
                 t = self.start_sec + (i / num_samples) * total_duration
                 frame = vp.get_frame_at_time(t)
                 if frame is None:
+                    logger.warning(f"Could not get frame at time {t:.2f}, skipping")
                     continue
 
                 h, w = frame.shape[:2]
@@ -63,26 +76,42 @@ class SizeEstimatorWorker(QThread):
 
                 pil_img = Image.fromarray(cv2.cvtColor(resized, cv2.COLOR_BGR2RGB))
                 if palette != "Full":
-                    num_colors = int(palette) if palette.isdigit() else 256
+                    try:
+                        num_colors = int(palette) if palette.isdigit() else 256
+                    except:
+                        num_colors = 256
                     pil_img = pil_img.quantize(colors=num_colors, method=Image.MEDIANCUT, dither=Image.NONE)
 
-                fd, tmp_path = tempfile.mkstemp(suffix=".gif")
-                os.close(fd)
-                pil_img.save(tmp_path, save_all=False, optimize=True)
-                size = os.path.getsize(tmp_path)
-                os.unlink(tmp_path)
+                # Try to create temp file, fallback to program's directory if fails
+                try:
+                    fd, tmp_path = tempfile.mkstemp(suffix=".gif")
+                    os.close(fd)
+                    pil_img.save(tmp_path, save_all=False, optimize=True)
+                    size = os.path.getsize(tmp_path)
+                    os.unlink(tmp_path)
+                except Exception as temp_err:
+                    logger.warning(f"Tempfile error: {temp_err}, using fallback")
+                    tmp_path = os.path.join(fallback_temp, f"sample_{i}.gif")
+                    pil_img.save(tmp_path, save_all=False, optimize=True)
+                    size = os.path.getsize(tmp_path)
+                    os.unlink(tmp_path)
 
                 total_size += size
                 sample_count += 1
+                logger.debug(f"Sample {i} size: {size} bytes")
 
             if sample_count == 0:
+                logger.warning("No valid samples, estimating 0 bytes")
                 self.finished.emit(0)
             else:
                 avg_size = total_size / sample_count
                 estimated = int(avg_size * total_frames)
+                logger.info(f"Estimation completed: {estimated} bytes ({estimated/1024:.1f} KB)")
                 self.finished.emit(estimated)
 
             vp.release()
 
         except Exception as e:
-            self.error.emit(str(e))
+            error_msg = f"Size estimator failed: {str(e)}\n{traceback.format_exc()}"
+            logger.error(error_msg)
+            self.error.emit(error_msg)
