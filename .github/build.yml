@@ -1,0 +1,56 @@
+# نام ورک‌فلو (در Actions نمایش داده می‌شود)
+name: Build EXE with Nuitka
+
+# زمان اجرا: هر بار روی شاخه main push کردید، یا به صورت دستی از دکمه Run workflow
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# تعریف پردازه (job) – اینجا فقط یک job برای ویندوز می‌سازیم
+jobs:
+  build-windows:
+    # ماشین مجازی ویندوز – خروجی .exe فقط در ویندوز ساخته می‌شود
+    runs-on: windows-latest
+
+    # مراحل اجرا (steps) - هر step یک کار مشخص
+    steps:
+
+      # 1. دریافت کدهای مخزن روی ماشین مجازی
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. نصب پایتون مشخص (نسخه 3.11، معماری 64 بیتی)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+
+      # 3. نصب وابستگی‌های پروژه از روی requirements.txt و همچنین خود Nuitka
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka
+
+      # 4. کامپایل برنامه با Nuitka
+      - name: Build with Nuitka
+        run: |
+          python -m nuitka `
+            --standalone `
+            --enable-plugin=pyside6 `
+            --windows-disable-console `
+            --windows-icon-from-ico=resource/icon.ico `
+            --include-data-dir=resource=resource `
+            --include-module=resources_rc `
+            --output-dir=build `
+            --output-filename=SocialGifMaker.exe `
+            main.py
+
+      # 5. ذخیره خروجی به عنوان Artifact (فایل قابل دانلود)
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyGifMaker-Windows
+          path: build/main.dist/
