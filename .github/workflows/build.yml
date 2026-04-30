@@ -6,9 +6,11 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
-    # فقط برای تگ‌های معمولی (بدون خط تیره) اجرا شود
     if: github.event_name != 'push' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-'))
     runs-on: windows-latest
     steps:
@@ -29,7 +31,7 @@ jobs:
 
       - name: Extract version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
       - name: Build with Nuitka
         run: |
@@ -45,7 +47,7 @@ jobs:
             --assume-yes-for-downloads `
             main.py
 
-      - name: Zip the output folder with version
+      - name: Zip the output folder
         run: |
           $VERSION = "${{ steps.get_version.outputs.VERSION }}"
           Compress-Archive -Path build/main.dist/* -DestinationPath "SocialGifMaker-$VERSION.zip"
