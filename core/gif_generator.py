@@ -64,9 +64,15 @@ class GifGenerator:
             processed += 1
             yield (processed / total_frames) * 100
 
-        # Apply color palette quantization if needed
+        # Apply color palette quantization
         if palette_colors != "Full":
-            num_colors = int(palette_colors)
+            try:
+                num_colors = int(palette_colors)
+                if num_colors <= 0:
+                    num_colors = 256
+            except (ValueError, TypeError):
+                num_colors = 256
+
             quantized_frames = []
             for im in frames_pil:
                 q = im.quantize(colors=num_colors, method=Image.MEDIANCUT, dither=Image.NONE)
