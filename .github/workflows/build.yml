@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  # ========== Build Windows (onefile) ==========
+  # ========== Build Windows (standalone) ==========
   build-windows:
     if: github.event_name != 'push' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-'))
     runs-on: windows-latest
@@ -35,10 +35,10 @@ jobs:
       - name: Extract version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-      - name: Build with Nuitka (onefile)
+      - name: Build with Nuitka (standalone)
         run: |
           python -m nuitka `
-            --onefile `
+            --standalone `
             --enable-plugin=pyside6 `
             --windows-console-mode=disable `
             --windows-icon-from-ico=resource/icon.ico `
@@ -52,15 +52,15 @@ jobs:
             --output-filename=SocialGifMaker.exe `
             --assume-yes-for-downloads `
             main.py
-      - name: Prepare zip (single EXE)
+      - name: Prepare final package (zip)
         id: prepare
         run: |
           $VERSION = "$env:GITHUB_REF_NAME" -replace '^v', ''
-          $ZIP_NAME = "SocialGifMaker-Windows-$VERSION.zip"
-          New-Item -ItemType Directory -Path "temp_package" -Force
-          Copy-Item -Path "build/SocialGifMaker.exe" -Destination "temp_package/"
-          Compress-Archive -Path "temp_package/*" -DestinationPath $ZIP_NAME -Force
-          Remove-Item -Recurse -Force "temp_package"
+          $FOLDER_NAME = "SocialGifMaker-Windows-$VERSION"
+          $ZIP_NAME = "$FOLDER_NAME.zip"
+          # Rename the output folder from main.dist to the desired folder name
+          Rename-Item -Path "build/main.dist" -NewName $FOLDER_NAME
+          Compress-Archive -Path $FOLDER_NAME -DestinationPath $ZIP_NAME -Force
           echo "ZIP_NAME=$ZIP_NAME" >> $env:GITHUB_OUTPUT
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -68,7 +68,7 @@ jobs:
           name: windows-build
           path: ${{ steps.prepare.outputs.ZIP_NAME }}
 
-  # ========== Build Linux (onefile) ==========
+  # ========== Build Linux (standalone) ==========
   build-linux:
     if: github.event_name != 'push' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-'))
     runs-on: ubuntu-latest
@@ -91,10 +91,10 @@ jobs:
       - name: Extract version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-      - name: Build with Nuitka (onefile)
+      - name: Build with Nuitka (standalone)
         run: |
           python -m nuitka \
-            --onefile \
+            --standalone \
             --enable-plugin=pyside6 \
             --include-data-dir=resource=resource \
             --include-module=resources_rc \
@@ -106,15 +106,14 @@ jobs:
             --output-filename=SocialGifMaker \
             --assume-yes-for-downloads \
             main.py
-      - name: Prepare zip (single executable)
+      - name: Prepare final package (zip)
         id: prepare
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          ZIP_NAME="SocialGifMaker-Linux-$VERSION.zip"
-          mkdir -p temp_package
-          cp build/SocialGifMaker temp_package/
-          zip -j "$ZIP_NAME" temp_package/SocialGifMaker
-          rm -rf temp_package
+          FOLDER_NAME="SocialGifMaker-Linux-$VERSION"
+          ZIP_NAME="$FOLDER_NAME.zip"
+          mv build/main.dist "$FOLDER_NAME"
+          zip -r "$ZIP_NAME" "$FOLDER_NAME"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -122,7 +121,7 @@ jobs:
           name: linux-build
           path: ${{ steps.prepare.outputs.ZIP_NAME }}
 
-  # ========== Build macOS (onefile) ==========
+  # ========== Build macOS (standalone) ==========
   build-macos:
     if: github.event_name != 'push' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-'))
     runs-on: macos-latest
@@ -141,10 +140,10 @@ jobs:
       - name: Extract version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-      - name: Build with Nuitka (onefile)
+      - name: Build with Nuitka (standalone)
         run: |
           python -m nuitka \
-            --onefile \
+            --standalone \
             --enable-plugin=pyside6 \
             --include-data-dir=resource=resource \
             --include-module=resources_rc \
@@ -156,15 +155,14 @@ jobs:
             --output-filename=SocialGifMaker \
             --assume-yes-for-downloads \
             main.py
-      - name: Prepare zip (single executable)
+      - name: Prepare final package (zip)
         id: prepare
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          ZIP_NAME="SocialGifMaker-macOS-$VERSION.zip"
-          mkdir -p temp_package
-          cp build/SocialGifMaker temp_package/
-          zip -j "$ZIP_NAME" temp_package/SocialGifMaker
-          rm -rf temp_package
+          FOLDER_NAME="SocialGifMaker-macOS-$VERSION"
+          ZIP_NAME="$FOLDER_NAME.zip"
+          mv build/main.dist "$FOLDER_NAME"
+          zip -r "$ZIP_NAME" "$FOLDER_NAME"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -172,7 +170,7 @@ jobs:
           name: macos-build
           path: ${{ steps.prepare.outputs.ZIP_NAME }}
 
-  # ========== Create Release ==========
+  # ========== Create Release (after all builds succeed) ==========
   release:
     needs: [build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
