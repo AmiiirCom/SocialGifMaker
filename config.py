@@ -1,11 +1,14 @@
-# config.py
+"""
+Application-wide configuration constants.
+"""
+
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "logs", "app.log")
 SUPPORTED_VIDEO_EXT = (".mp4", ".avi", ".mov", ".mkv", ".webm")
-PREVIEW_WIDTH = 480
-PREVIEW_HEIGHT = 360
+PREVIEW_WIDTH = 640
+PREVIEW_HEIGHT = 480
 TEMP_DIR = os.path.join(BASE_DIR, "temp")
 
 os.makedirs(TEMP_DIR, exist_ok=True)

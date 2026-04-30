@@ -1,49 +1,86 @@
-# core/video_processor.py
+"""
+OpenCV-based video reader with frame extraction and seeking capabilities.
+"""
+
 import cv2
-import numpy as np
 from logging_config import setup_logging
+
 logger = setup_logging()
 
+
 class VideoProcessor:
-    def __init__(self, video_path):
-        self.video_path = video_path  # ذخیره مسیر برای استفاده مجدد
+    """Handles video loading, frame extraction, and seeking."""
+
+    def __init__(self, video_path: str):
+        """
+        Initialize the video processor.
+
+        Args:
+            video_path: Path to the video file.
+
+        Raises:
+            Exception: If the video cannot be opened.
+        """
+        self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
-            raise Exception("نمی‌توان ویدیو را باز کرد")
+            raise Exception(f"Failed to open video: {video_path}")
+
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.duration = self.total_frames / self.fps
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        logger.info(f"Video loaded: {self.width}x{self.height}, fps={self.fps}, frames={self.total_frames}")
 
-    def get_frame_at_time(self, time_sec):
+        logger.info(f"Video loaded: {self.width}x{self.height}, fps={self.fps:.2f}, frames={self.total_frames}")
+
+    def get_frame_at_time(self, time_sec: float):
+        """
+        Retrieve a single frame at a given time (seconds).
+
+        Args:
+            time_sec: Timestamp in seconds.
+
+        Returns:
+            Frame as numpy array (BGR) or None if error.
+        """
         frame_no = int(time_sec * self.fps)
-        if frame_no < 0:
-            frame_no = 0
-        if frame_no >= self.total_frames:
-            frame_no = self.total_frames - 1
+        frame_no = max(0, min(frame_no, self.total_frames - 1))
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_no)
         ret, frame = self.cap.read()
-        if ret:
-            return frame
-        return None
+        return frame if ret else None
 
-    def extract_frames(self, start_sec, end_sec, target_fps=None, frame_skip=1):
+    def extract_frames(self, start_sec: float, end_sec: float,
+                       target_fps: float = None, frame_skip: float = 1.0):
+        """
+        Generator yielding frames from start to end with subsampling.
+
+        Args:
+            start_sec: Start time (seconds).
+            end_sec: End time (seconds).
+            target_fps: Desired output FPS (if None, use original).
+            frame_skip: Skip every N frames (float allows fractional skipping).
+
+        Yields:
+            Frame (numpy array, BGR).
+        """
         start_frame = int(start_sec * self.fps)
         end_frame = int(end_sec * self.fps)
         if target_fps is None:
             target_fps = self.fps
-        skip_ratio = self.fps / target_fps
-        step = max(1, int(round(skip_ratio * frame_skip)))
-        current_frame = start_frame
-        while current_frame <= end_frame:
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
+
+        # Step = (original_fps / target_fps) * frame_skip
+        step = max(1, int(round((self.fps / target_fps) * frame_skip)))
+
+        current = start_frame
+        while current <= end_frame:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, current)
             ret, frame = self.cap.read()
             if not ret:
                 break
             yield frame
-            current_frame += step
+            current += step
 
     def release(self):
+        """Release the underlying VideoCapture object."""
         self.cap.release()

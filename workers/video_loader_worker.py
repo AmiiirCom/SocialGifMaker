@@ -1,24 +1,29 @@
+"""
+Worker thread for loading a video file asynchronously.
+"""
+
+import traceback
 from PySide6.QtCore import QThread, Signal
 from core.video_processor import VideoProcessor
-import traceback
+
 
 class VideoLoaderWorker(QThread):
     finished = Signal(dict)
     error = Signal(str)
 
-    def __init__(self, video_path):
+    def __init__(self, video_path: str):
         super().__init__()
         self.video_path = video_path
 
     def run(self):
         try:
-            proc = VideoProcessor(self.video_path)
+            processor = VideoProcessor(self.video_path)
             info = {
-                "processor": proc,
-                "duration": proc.duration,
-                "width": proc.width,
-                "height": proc.height,
-                "fps": proc.fps
+                "processor": processor,
+                "duration": processor.duration,
+                "width": processor.width,
+                "height": processor.height,
+                "fps": processor.fps
             }
             self.finished.emit(info)
         except Exception as e:
