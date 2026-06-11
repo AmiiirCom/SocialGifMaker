@@ -10,7 +10,7 @@
 
 A **professional desktop application** to convert video clips into **lightweight, social‑media‑ready GIFs** with full control over quality, trimming, and text overlays.
 
-![Screenshot](https://github.com/AmiiirCom/SocialGifMaker/blob/master/Screenshot.png) *(add a screenshot of your app here)*
+![Screenshot](https://github.com/AmiiirCom/SocialGifMaker/blob/master/Screenshot.png)
 
 ---
 
