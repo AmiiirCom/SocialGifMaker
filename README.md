@@ -5,6 +5,8 @@
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](https://opencv.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 [![AI-Assisted](https://img.shields.io/badge/AI--Assisted-blue?logo=openai&logoColor=white)](https://deepseek.com/)
+[![Repodest](https://img.shields.io/badge/analyzed%20by-Repodest-9333ea)](https://mohsen-niksirat.github.io/Repodest/?repo=AmiiirCom%2FSocialGifMaker)
+[![Health](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FAmiiirCom%2FSocialGifMaker&query=%24.stargazers_count&logo=github&label=stars)](https://github.com/AmiiirCom/SocialGifMaker)
 
 ![AppIcon](https://github.com/AmiiirCom/SocialGifMaker/blob/master/resource/icon.png)
 
